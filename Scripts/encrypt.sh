@@ -1,13 +1,34 @@
 #!/bin/bash
 
-echo "Welcome, I am ready to encrypt a file/folder for you"
-echo "Thanks"
-echo "currently I have a limitation, Place me to the same folder, where a file to be encrypted is present"
-echo "Enter the Exact File Name with extension"
-read -r file
-# decryption command
-# gpg -d filename.gpg > filename
-gpg -c "$file"
-echo "I have encrypted the file sucessfully..."
-echo "Now I will be removing the original file"
-rm -rf "$file"
+read -rp "Enter filename (any prefix, suffix, substring): " key
+
+files=(*"$key"*)
+files=($(printf "%s\n" "${files[@]}" | grep -v '\.gpg$'))
+
+if [ ${#files[@]} -eq 0 ]; then
+    echo "No files found with the keyword '$key'"
+    exit 1
+fi
+
+while true; do
+    echo "Select a file to encrypt:"
+    select file in "${files[@]}"; do
+        if [ -n "$file" ]; then
+            echo "Encrypting file: $file"
+            gpg -c "$file"
+            echo "I have encrypted the file successfully..."
+            echo "Now I will be removing the original file"
+            rm -rf "$file"
+            files=(*"$key"*)  
+            files=($(printf "%s\n" "${files[@]}" | grep -v '\.gpg$'))
+            if [ ${#files[@]} -eq 0 ]; then
+                echo "No more files left to encrypt. Exiting."
+                exit 0
+            fi
+            break
+        else
+            echo "Invalid selection. Exiting."
+            exit 1
+        fi
+    done
+done
